@@ -5,6 +5,55 @@ import sys
 from MakeDictionary import MakeDictionary
 
 
+def main() :
+
+    import optparse
+    desc = """
+Take two words of the same length and return a path between them
+using only 1-letter pertubations.  Every word in the path must be
+a valid word in the dictionary.
+"""
+
+
+    vers = "0.1"
+    parser = optparse.OptionParser( description = desc, version = vers, usage = "%prog [options]" )
+    
+    parser.add_option( "-b", "--begin", dest = "begin",
+                       action = "store", type = "string", default=None,
+                       help = "Beginning Word" )
+    
+    parser.add_option( "-e", "--end", dest = "end",
+                       action = "store", type = "string", default=None,
+                       help = "Distination word" )
+    
+    parser.add_option( "-v", "--verbose", dest = "verbose",
+                       action = "store_true", default=False,
+                       help = "Print the path as it is walked." )
+
+    parser.add_option( "-c", "--clean", dest = "clean",
+                       action = "store_true", default=True,
+                       help = "Clean the final path to reduce unnecessary steps." )
+
+    # Parse the command line options:
+    ( options, unknown ) = parser.parse_args()
+
+    # Ensure that all necessary input has been supplied
+    if options.begin == None:
+        print "You have to define a beginning word" 
+        return 255        
+    if options.end == None:
+        print "You have to define an end word word" 
+        return 255        
+
+    if len(options.begin) != len(options.end):
+        print "Error: Words must be the same length"
+        return 255
+
+
+    WordWalk(begin=options.begin, end=options.end, verbose=options.verbose, clean=options.clean)
+    
+
+
 def Overlap( wordA, wordB ):
     """ Find the letter-overlap between two words
 
@@ -37,7 +86,7 @@ def OneAway( wordA, wordB):
     return False
 
 
-def WordWalk(begin, end):
+def WordWalk(begin, end, clean=True, verbose=False):
     """ Talk two words of the same length and
     find a path between them using real dictionary
     words
@@ -80,6 +129,12 @@ def WordWalk(begin, end):
 
     while current != end:
 
+        if verbose:
+            print ''
+            print path
+
+
+
         # Calculate the current distance to the target
         distance = Overlap( current, end )
 
@@ -87,7 +142,7 @@ def WordWalk(begin, end):
         # then we take one step backwords
         # We back up our path as well
         if current in DeadEndWords:
-            current = path[ -1 ]
+            current = path[ -2 ]
             path = path[ : -1 ]
             continue
 
@@ -163,7 +218,7 @@ def WordWalk(begin, end):
             # If we can, go back only one step
             #current = begin
             #path = [ begin ]
-            current = path[ -1 ]
+            current = path[ -2 ]
             path = path[ : -1 ]
 
         # If we DID find a word, append it
@@ -182,6 +237,12 @@ def WordWalk(begin, end):
 
     # TO DO: For now, I only check 1 -> 2 -> 3 == 1 -> 3
     # but I could do this with 1 -> N1 -> N2 -> ... -> M == 1 -> M
+
+
+    if not clean:
+        print path
+        return
+
 
     pathLength = len(path)
 
@@ -209,12 +270,4 @@ def WordWalk(begin, end):
     return
 
 if __name__ == "__main__":
-
-    if len(sys.argv) != 3:
-        print "Error: Must supply two words"
-        raise Exception("main - Bad Input")
-
-    begin = sys.argv[1]
-    end = sys.argv[2]
-    WordWalk(begin, end)
-    
+    main()
