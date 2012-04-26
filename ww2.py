@@ -17,13 +17,10 @@ def collect_words_of_length(size, loc='/usr/share/dict/words'):
 
 def walk_from(start, dest, max_depth=4):
     """
-    Finds all shortest paths between words `start` and `dest`. Only generates
-    paths of odd length. Uses a very stupid algorithm which tries to brute-force
-    expand all path-connected words to the start and ending points
-    simultaneously, and hopes to God it happens to stumble over the same word in
-    both directions.
-
-    Easily misses many paths.
+    Finds all shortest paths between words `start` and `dest`. Uses a very
+    stupid algorithm which tries to brute-force breadth-first expand all paths
+    leading from the start and ending points simultaneously, and hopes to God to
+    stumble over the same word in both directions.
     """
     if len(start) != len(dest):
         print "words must be of equal length", start, dest
@@ -52,22 +49,24 @@ def walk_from(start, dest, max_depth=4):
     gR = [[dest]]
 
     depth = 0
-    npaths = 0
+    paths = set()
 
-    while npaths == 0 and depth < max_depth:
+    while not paths and depth < max_depth:
         print "trying depth", depth
         gL = append_one_aways(gL)
         gR = append_one_aways(gR)
 
         for L, R in itertools.product(gL, gR):
-            if L[-1] == R[-1]:
-                path = L + list(reversed(R))[1:]
-                npaths += 1
-                print ' -> '.join(path)
+            overlap = set(L) & set(R)
+            if overlap:
+                a = list(overlap)[0]
+                paths.add(tuple(L[:L.index(a)+1]) +
+                          tuple(reversed(R[:R.index(a)])))
+
         depth += 1
 
-    print ("found %d paths of length %d from %s to %s" %
-           (npaths, 2*depth + 1, start, dest))
+    for n, p in enumerate(paths):
+        print ("path %d: (" % n) + " -> ".join(p) + ")"
 
 
 def main():
@@ -81,16 +80,13 @@ def main():
     desc = " ".join(main.__doc__.split())
     parser = optparse.OptionParser(description=desc, version=vers,
                                    usage="%prog golf bird [options]")
-    parser.add_option( "-d", "--max-depth", type=int, default=3)
-
-    options, args = parser.parse_args()
-
+    parser.add_option( "-d", "--max-depth", dest="max_depth", type=int, default=3)
+    opts, args = parser.parse_args()
     try:
         start, dest = args[0:2]
     except:
         print "usage: ww2.py golf bird"
-
-    walk_from(start, dest)
+    walk_from(start, dest, max_depth=opts.max_depth)
 
 
 if __name__ == "__main__":
