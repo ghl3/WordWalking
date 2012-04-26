@@ -154,7 +154,7 @@ def WordWalk(begin, end):
         if not MatchFound:
             print "Ran into dead end with: %s" % current
             if current == begin:
-                print "Error: Didn't find a path from %s to %S" % (begin, end)
+                print "Error: Didn't find a path from %s to %s" % (begin, end)
                 return
 
 
@@ -179,6 +179,10 @@ def WordWalk(begin, end):
     # Sometimes we take unnecessary steps:
     # 1 -> 2 -> 3, where we could just do 1 -> 3
     # We here eliminate those steps from the path
+
+    # TO DO: For now, I only check 1 -> 2 -> 3 == 1 -> 3
+    # but I could do this with 1 -> N1 -> N2 -> ... -> M == 1 -> M
+
     pathLength = len(path)
 
     for (i, step) in enumerate(path):
