@@ -6,9 +6,14 @@ from MakeDictionary import MakeDictionary
 
 
 def Overlap( wordA, wordB ):
+    """ Find the letter-overlap between two words
+
+    Requre that the words be the same length, else
+    throw an exception.
+    """
     
     if( len(wordA) != len(wordB) ):
-        raise Exception()
+        raise Exception("Overlap - Non Equal Words")
 
     overlap = 0
 
@@ -21,6 +26,10 @@ def Overlap( wordA, wordB ):
 
 
 def OneAway( wordA, wordB):
+    """ Return whether two words differ by one letter
+
+    """
+
 
     overlap = Overlap( wordA, wordB )
     if overlap == len(wordA) - 1:
@@ -37,19 +46,21 @@ def WordWalk(begin, end):
 
     if len( begin ) != len(end ):
         print "Words have unequal length"
-        raise Exception()
-    
-    Dictionary = MakeDictionary( len(begin) )
+        raise Exception("WordWalk - Unequal Words")
 
+
+    Dictionary = MakeDictionary( len(begin) )
+        
 
     if begin not in Dictionary:
         print "Error: %s not in dictionary" % begin
         return
 
-
+    # 'current' is the current node (the string name of the word')
+    # 'distance' is the distance between the current word and 'end', the target
     current = begin
     distance = Overlap( current, end )
-    UsedWords = set()
+    DeadEndWords = set()
 
     path = [ begin ]
 
@@ -69,9 +80,13 @@ def WordWalk(begin, end):
 
     while current != end:
 
+        # Calculate the current distance to the target
         distance = Overlap( current, end )
 
-        if current in UsedWords:
+        # If the current word is a DeadEnd, 
+        # then we take one step backwords
+        # We back up our path as well
+        if current in DeadEndWords:
             current = path[ -1 ]
             path = path[ : -1 ]
             continue
@@ -81,15 +96,19 @@ def WordWalk(begin, end):
         " LOOK FOR STRICTLY > Words"
         for word in Dictionary:
 
+            # Ignore the current word
             if word == current: 
                 continue
 
-            if word in UsedWords:
+            # Never jump to a Dead End
+            if word in DeadEndWords:
                 continue
 
+            # Don't go backwords here
             if word in path:
                 continue
 
+            # Must of course be one away
             if not OneAway( current, word ):
                 continue
 
@@ -104,18 +123,24 @@ def WordWalk(begin, end):
         if not MatchFound:
             for word in Dictionary:
 
+
+                # Ignore the current word
                 if word == current: 
                     continue
 
-                if word in UsedWords:
+                # Never jump to a Dead End
+                if word in DeadEndWords:
                     continue
 
+                # Don't go backwords here
                 if word in path:
                     continue
 
+                # Must of course be one away
                 if not OneAway( current, word ):
                     continue
 
+                # Allow for traversing to an equivalant node
                 if Overlap( word, end ) >= distance:
                     current = word
                     MatchFound = True
@@ -123,6 +148,9 @@ def WordWalk(begin, end):
                 pass
 
 
+        # If we can't find a word that fulfills the above,
+        # we must take action.  We call the current word
+        # a "dead end" and we back out.
         if not MatchFound:
             print "Ran into dead end with: %s" % current
             if current == begin:
@@ -130,24 +158,27 @@ def WordWalk(begin, end):
                 return
 
 
-            UsedWords.add( current )
+            DeadEndWords.add( current )
 
             # If we can, go back only one step
             #current = begin
             #path = [ begin ]
             current = path[ -1 ]
             path = path[ : -1 ]
-            
+
+        # If we DID find a word, append it
+        # to the path and keep looking
         else:
             path.append( current )
 
         pass
 
     
-    # print path
 
     # Now, try to shorten the path if possible
-
+    # Sometimes we take unnecessary steps:
+    # 1 -> 2 -> 3, where we could just do 1 -> 3
+    # We here eliminate those steps from the path
     pathLength = len(path)
 
     for (i, step) in enumerate(path):
@@ -156,13 +187,16 @@ def WordWalk(begin, end):
 
         if step == None: continue
 
-
+        # If path[ i + 1 ] is unnecessary, 
+        # we eliminate it (set it to None)
+        # This will be cleaned up later
         if OneAway( step, path[ i + 2 ] ):
             print "Unnecessary step: %s" % path[i+1] 
             path[i+1] = None
 
         pass
 
+    # Clean out the bad steps
     path = [x for x in path if x != None]
         
     print path
@@ -174,9 +208,9 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 3:
         print "Error: Must supply two words"
-        raise Exception()
-
+        raise Exception("main - Bad Input")
 
     begin = sys.argv[1]
     end = sys.argv[2]
     WordWalk(begin, end)
+    

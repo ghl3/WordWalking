@@ -13,8 +13,12 @@ def MakeDictionary( WordSize=None ):
 
     dictionary = set()
 
-    inputDict = open( "/usr/share/dict/words", "r" )
-    
+    try:
+        inputDict = open( "/usr/share/dict/words", "r" )
+    except:
+        print "Error: Could not find unix dictionary '/usr/share/dict/words'"
+        print "Returning empty dictionary"
+        return dictionary
 
     for word in inputDict:
 
@@ -38,4 +42,4 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         WordSize = int(sys.argv[1])
         print "Using Word Size: %s" % WordSize
-    MakeDictionary(WordSize)
+    print MakeDictionary(WordSize)
