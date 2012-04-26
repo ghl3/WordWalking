@@ -106,17 +106,6 @@ def WordWalk(start, dest, clean=True, verbose=False):
 
         # Calculate the current distance to the target
         distance = Overlap(current, dest)
-        
-        '''
-        if current in DeadEndWords:
-            """
-            If the current word is a DeadEnd, then we take one step backwords We
-            back up our path as well.
-            """
-            current = path[-2]
-            path = path[:-1]
-            continue
-        '''
         MatchFound = False
 
 
