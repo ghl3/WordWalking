@@ -63,10 +63,32 @@ def WordWalk(start, dest, clean=True, verbose=False):
     # 'current' is the current node (the string name of the word') 'distance' is
     # the distance between the current word and 'dest', the target
     current = start
-    distance = Overlap(current, dest)
     DeadEndWords = set()
-
     path = [start]
+
+
+    def check_acceptable_node(word):
+        """ Determine if we can move to the node 'word'
+        
+        """
+        # Ignore the current word
+        if word == current: 
+            return False
+        
+        # Never jump to a Dead End
+        if word in DeadEndWords:
+            return False
+
+        # Don't go backwords here
+        if word in path:
+            return False
+
+        # Must of course be one away
+        if not OneAway(current, word):
+            return False
+
+        return True
+
 
     """
     Algorithm:  
@@ -80,58 +102,31 @@ def WordWalk(start, dest, clean=True, verbose=False):
     """
 
     while current != dest:
-        if verbose: print "\n" + path
+        if verbose: print "\n",  path
 
         # Calculate the current distance to the target
         distance = Overlap(current, dest)
-
-        if current in DeadEndWords:
-            """
-            If the current word is a DeadEnd, then we take one step backwords We
-            back up our path as well.
-            """
-            current = path[-2]
-            path = path[:-1]
-            continue
-
         MatchFound = False
 
-        """ LOOK FOR STRICTLY > Words """
-        def check_acceptable_node(word):
-            # Ignore the current word
-            if word == current: 
-                return False
-
-            # Never jump to a Dead End
-            if word in DeadEndWords:
-                return False
-
-            # Don't go backwords here
-            if word in path:
-                return False
-
-            # Must of course be one away
-            if not OneAway(current, word):
-                return False
-
-            return True
-
+        """ look for strictly > nodes"""
         for word in Dictionary:
-            if not check_acceptable_node(word):
-                continue
-
-            if Overlap(word, dest) > distance:
+            if check_acceptable_node(word) and Overlap(word, dest) > distance:
                 current = word
                 MatchFound = True
                 break
 
-        """ LOOK FOR >= Words """
+        """ look for >= nodes """
         if not MatchFound:
             for word in Dictionary:
-                if not check_acceptable_node(word):
-                    continue
+                if check_acceptable_node(word) and Overlap(word, dest) >= distance:
+                    current = word
+                    MatchFound = True
+                    break
 
-                if Overlap(word, dest) >= distance:
+        """ allow for any nodes """
+        if not MatchFound:
+            for word in Dictionary:
+                if check_acceptable_node(word):
                     current = word
                     MatchFound = True
                     break
@@ -140,10 +135,13 @@ def WordWalk(start, dest, clean=True, verbose=False):
         # We call the current word a "dead end" and we back out.
         if not MatchFound:
             print "Ran into dead end with: %s" % current
+
+            # If the start is a dead end, we failed
             if current == start:
                 print "Error: Didn't find a path from %s to %s" % (start, dest)
+                return
 
-            DeadEndWords.add( current )
+            DeadEndWords.add(current)
 
             # If we can, go back only one step
             current = path[-2]
@@ -152,6 +150,8 @@ def WordWalk(start, dest, clean=True, verbose=False):
         # If we DID find a word, append it to the path and keep looking
         else:
             path.append(current)
+
+
     
     """
     Now, try to shorten the path if possible
@@ -193,9 +193,9 @@ def main():
     dictionary.
     """
     vers = "0.1"
-    parser = optparse.OptionParser(description=main.__doc__.replace("    ", " "),
-                                   version=vers,
-                                   usage="%prog [options]")
+
+    desc = " ".join(main.__doc__.split())
+    parser = optparse.OptionParser(description=desc, version=vers, usage="%prog [options]")
 
     parser.add_option( "-v", "--verbose", dest="verbose",
                        action="store_true", default=False,
