@@ -108,7 +108,6 @@ def WordWalk(start, dest, clean=True, verbose=False):
         distance = Overlap(current, dest)
         MatchFound = False
 
-
         """ look for strictly > nodes"""
         for word in Dictionary:
             if check_acceptable_node(word) and Overlap(word, dest) > distance:
@@ -194,9 +193,9 @@ def main():
     dictionary.
     """
     vers = "0.1"
-    parser = optparse.OptionParser(description=main.__doc__.replace("    ", " "),
-                                   version=vers,
-                                   usage="%prog [options]")
+
+    desc = " ".join(main.__doc__.split())
+    parser = optparse.OptionParser(description=desc, version=vers, usage="%prog [options]")
 
     parser.add_option( "-v", "--verbose", dest="verbose",
                        action="store_true", default=False,
