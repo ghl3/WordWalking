@@ -41,6 +41,51 @@ def OneAway(wordA, wordB):
     return False
 
 
+def CleanPathList(path_list):
+    """ Take a path list and shorten it if possible
+
+    """
+
+    short_path = []
+
+    itr_first = 0
+    while itr_first < len(path_list):
+        
+        word_first = path_list[itr_first]
+        short_path.append(word_first)
+        
+        itr_second = len(path_list) - 1
+        while itr_second > itr_first:
+            word_second = path_list[itr_second]
+
+            if OneAway(word_first, word_second):
+                itr_first = itr_second - 1
+                break
+            else:
+                itr_second -= 1
+            
+        
+        itr_first += 1
+        
+
+    return short_path
+
+
+def GoodPath( path, start, end ):
+    """ Check that the path we produce is valid
+    """
+
+    if path[0] != start: return False
+    if path[-1] != end: return False
+
+    for i, word in enumerate(path):
+        if i == len(path)-1: break
+        if not OneAway(word, path[i+1]):
+            return False
+    
+    return True
+
+
 def WordWalk(start, dest, clean=True, verbose=False):
     """
     Talk two words of the same length and find a path between them using real
@@ -162,11 +207,18 @@ def WordWalk(start, dest, clean=True, verbose=False):
     TO DO: For now, I only check 1 -> 2 -> 3 == 1 -> 3
     but I could do this with 1 -> N1 -> N2 -> ... -> M == 1 -> M
     """
+    
+    if not GoodPath(path, start, dest):
+        print "Error: Found path, but it is invalid"
+        raise Exception("Invalid Path")
+
 
     if not clean:
-        print path
-        return
+        return path
 
+    path = CleanPathList(path)
+
+    '''
     pathLength = len(path)
 
     for i, step in enumerate(path):
@@ -183,7 +235,13 @@ def WordWalk(start, dest, clean=True, verbose=False):
 
     # Clean out the bad steps
     path = [x for x in path if x != None]
-    print path
+    '''
+
+    if not GoodPath(path, start, dest):
+        print "Error: Found path, but it is invalid"
+        raise Exception("Invalid Path")
+
+    return path
 
 
 def main():
@@ -192,6 +250,7 @@ def main():
     1-letter pertubations. Every word in the path must be a valid word in the
     dictionary.
     """
+
     vers = "0.1"
 
     desc = " ".join(main.__doc__.split())
@@ -207,15 +266,25 @@ def main():
 
     # Parse the command line options:
     options, args = parser.parse_args()
+    if len(args) != 2:
+        print "Error: Must supply two words as arguments"
+        return
+
     start_word, dest = args[0:2]
 
     if len(start_word) != len(start_word):
         print "Error: Words must be the same length"
         return 255
 
-    WordWalk(start=start_word,
-             dest=dest,
-             verbose=options.verbose, clean=options.clean) 
+    """
+    To Do: Add (uncorrelated) threading which starts from both ends
+    To Do: Add threading which walks from both ends and quits if they
+           meet in the middle (ie if their paths intersect)
+    """
+    
+
+    print WordWalk(start=start_word, dest=dest,
+                    verbose=options.verbose, clean=options.clean) 
 
 
 if __name__ == "__main__":
