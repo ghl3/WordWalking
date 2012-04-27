@@ -90,10 +90,10 @@ def choose_next_target(sL, sR, space, exclude=[]):
     print "choosing next target pair...",
     print "L/R sniffer sizes are (%d, %d)" % (sL.size(), sR.size()),
 
-    dist, tL, tR = sorted([(metric(s._value, t._value), s, t)
-                           for s, t in itertools.product(sL.all_nodes(),
-                                                         sR.all_nodes())
-                           if (s._value, t._value) not in exclude])[0]
+    dist, tL, tR = min([(metric(s._value, t._value), s, t)
+                        for s, t in itertools.product(sL.all_nodes(),
+                                                      sR.all_nodes())
+                        if (s._value, t._value) not in exclude])
 
     print "best pair is (%s, %s) with distance %d" % (tL._value, tR._value, dist)
 
@@ -172,5 +172,6 @@ def run_tests():
 
 
 if __name__ == "__main__":
-    main()
-
+    from timeit import Timer
+    t = Timer("main()", "from __main__ import main")
+    print "ran in %f seconds" % t.timeit(number=1)
