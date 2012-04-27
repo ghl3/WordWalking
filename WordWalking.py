@@ -211,47 +211,13 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
         print "Error: Found path, but it is invalid"
         raise Exception("Invalid Path")
 
+    if clean:
+        path = CleanPathList(path)
 
     if reverse:
         path = path.reverse()
 
-
-    if not clean:
-        return path
-
-    path = CleanPathList(path)
-
-    '''
-    pathLength = len(path)
-
-    for i, step in enumerate(path):
-        if i > pathLength - 3:
-            break
-
-        if step == None: continue
-
-        # If path[ i + 1 ] is unnecessary, we eliminate it (set it to None) This
-        # will be cleaned up later
-        if OneAway( step, path[ i + 2 ] ):
-            print "Unnecessary step: %s" % path[i+1] 
-            path[i+1] = None
-
-    # Clean out the bad steps
-    path = [x for x in path if x != None]
-    '''
-
-    if not GoodPath(path, start, dest):
-        print "Error: Found path, but it is invalid"
-        raise Exception("Invalid Path")
-
     return path
-
-
-def threaded_walker(**kwargs):
-    """ A version of a walker that can be threaded
-    """
-    
-    
 
 
 def main():
