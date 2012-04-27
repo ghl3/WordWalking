@@ -86,7 +86,7 @@ def GoodPath( path, start, end ):
     return True
 
 
-def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords=None):
+def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords=None, EscapeFlag=None):
     """
     Talk two words of the same length and find a path between them using real
     dictionary words
@@ -148,6 +148,12 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
     """
 
     while current != dest:
+
+        # Excape if the EscapeFlag is true
+        if EscapeFlag:
+            print "Terminating Thread"
+            raise Exception("Terminated")
+
         if verbose: print "\n",  path
 
         # Calculate the current distance to the target
@@ -211,21 +217,21 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
         print "Error: Found path, but it is invalid"
         raise Exception("Invalid Path")
 
+    if clean:
+       path = CleanPathList(path)
 
     if reverse:
-        path = path.reverse()
-
-
-    if not clean:
-        return path
+        path.reverse()
 
     if path == None:
         raise Exception("path==None")
     
-
-    path = CleanPathList(path)
+    return path
 
     '''
+    #path = CleanPathList(path)
+
+
     pathLength = len(path)
 
     for i, step in enumerate(path):
@@ -242,31 +248,48 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
 
     # Clean out the bad steps
     path = [x for x in path if x != None]
-    '''
+
 
     if not GoodPath(path, start, dest):
         print "Error: Found path, but it is invalid"
         raise Exception("Invalid Path")
 
     return path
+    '''
 
+class threaded_walker(threading.Thread):
+    def __init__(self, filename, queue):
+        threading.Thread.__init__(self)
+        self.StopFlag=False
 
-def threaded_walker(GlobalPath, StopFlag, DeadEndWords, **kwargs):
-    """ A version of a walker that can be threaded
-    """
+    def stop(self):
+        self.stop.set()
 
-    # Start the process using the global DeadEndWords
-    path = WordWalk( DeadEndWords=DeadEndWords, **kwargs )
+    def stopped(self):
+        return self.stop.isSet()
 
+    def run(self):
+
+        # Start the process using the global DeadEndWords
+        try:
+            path = WordWalk( DeadEndWords=DeadEndWords, **kwargs )
+        except Exception("Terminated"):
+            return
+    
+    # In case the stop flag wasn't seen by the process,
+    # check it here
+    if StopFlag:
+        return
+
+    # Else, set it
     StopFlag = True
-
-    # Wait for all other walkers to die
-    while len(threading.enumerate()) > 0:
-        pass
 
     # After all the threads are dead, set the global path
     # This prevents other threads from messing it up
+    print "Setting Global Path to: ", path
     GlobalPath = path
+
+    print "Global Path: ", GlobalPath
 
     return
 
@@ -323,6 +346,7 @@ def main():
     DeadEndWords = set()
     StopFlag = False
     path = []
+    GlobalVars = [path, StopFlag, DeadEndWords] # Make mutable object, meh
 
     # Create the threads
     threading_args = (path, StopFlag, DeadEndWords)
@@ -340,6 +364,10 @@ def main():
     forward_walker.start()
     backward_walker.start()
 
+    forward_walker.join()
+    backward_walker.join()
+
+    '''
     while StopFlag==False:
         pass
 
@@ -348,10 +376,7 @@ def main():
 
     if backward_walker.isAlive():
         backward_walker._stop()
-
-    #forward_walker.join()
-    #backward_walker.join()
-
+   '''
 
     print path
     return
