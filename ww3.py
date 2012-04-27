@@ -39,25 +39,8 @@ class TreeNode:
         return len(self.all_nodes())
 
 
-def test_tree():
-    head = TreeNode("head")
-    child1 = head.add_node("child1")
-    child2 = head.add_node("child2")
-    gchild = child1.add_node("gchild")
-    print child1.vlineage()
-    print gchild.vlineage()
-    print gchild.head()
-    print head.all_values()
-    print [n._value for n in head.all_nodes()]
-
-
 def metric(word1, word2):
-    return sum([a!=b for a, b in zip(word1, word2)])
-
-
-def test_metric():
-    print "golf and barf have distance", metric("golf", "barf")
-    print "book and nook have distance", metric("book", "nook")
+    return sum([a != b for a, b in zip(word1, word2)])
 
 
 def collect_words_of_length(size, loc='/usr/share/dict/words'):
@@ -76,12 +59,7 @@ def get_neighbors(word, candidates, exclude=[], pred=list):
                  w not in exclude])
 
 
-def test_get_neighbors():
-    allwords = collect_words_of_length(4)
-    print get_neighbors("barf", allwords, exclude=["barn", "zarf"])
-
-
-def choose_next_target(sL, sR, space, exclude=[]):
+def expand_best_pair(sL, sR, space, exclude=[]):
     """
     Given two lists of nodes, finds the pair (tL, tR) such that tL in sL and tR
     in sR with the smallest metric distance. Expand the list of neighbors for
@@ -130,16 +108,12 @@ def walk_from(start, dest):
 
     snifferL = TreeNode(start)
     snifferR = TreeNode(dest)
-
-    for s in get_neighbors(snifferL._value, space): snifferL.add_node(s)
-    for s in get_neighbors(snifferR._value, space): snifferR.add_node(s)
-
     already_tried = set()
 
     while True:
         try:
-            dist, best = choose_next_target(snifferL, snifferR, space,
-                                            exclude=already_tried)
+            dist, best = expand_best_pair(snifferL, snifferR, space,
+                                          exclude=already_tried)
             already_tried.add((best[0]._value, best[1]._value))
         except:
             print "could not find a path, sorry ;("
@@ -170,6 +144,28 @@ def main():
     walk_from(start, dest)
 
 
+def test_tree():
+    head = TreeNode("head")
+    child1 = head.add_node("child1")
+    child2 = head.add_node("child2")
+    gchild = child1.add_node("gchild")
+    print child1.vlineage()
+    print gchild.vlineage()
+    print gchild.head()
+    print head.all_values()
+    print [n._value for n in head.all_nodes()]
+
+
+def test_metric():
+    print "golf and barf have distance", metric("golf", "barf")
+    print "book and nook have distance", metric("book", "nook")
+
+
+def test_get_neighbors():
+    allwords = collect_words_of_length(4)
+    print get_neighbors("barf", allwords, exclude=["barn", "zarf"])
+
+
 def run_tests():
     test_tree()
     test_metric()
@@ -177,6 +173,7 @@ def run_tests():
 
 
 if __name__ == "__main__":
+    #run_tests()
     from timeit import Timer
     t = Timer("main()", "from __main__ import main")
     print "ran in %f seconds" % t.timeit(number=1)
