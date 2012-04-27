@@ -93,8 +93,6 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False,
     dictionary words
     """
 
-    print "Starting Word Walk"
-
     if len(start) != len(dest):
         print "Words have unequal length"
         raise Exception("WordWalk: unequal length words, idiot!")
