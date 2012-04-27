@@ -86,7 +86,7 @@ def GoodPath( path, start, end ):
     return True
 
 
-def WordWalk(start, dest, clean=True, verbose=False):
+def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords=None):
     """
     Talk two words of the same length and find a path between them using real
     dictionary words
@@ -108,7 +108,8 @@ def WordWalk(start, dest, clean=True, verbose=False):
     # 'current' is the current node (the string name of the word') 'distance' is
     # the distance between the current word and 'dest', the target
     current = start
-    DeadEndWords = set()
+    if DeadEndWords==None:
+        DeadEndWords = set()
     path = [start]
 
 
@@ -196,8 +197,6 @@ def WordWalk(start, dest, clean=True, verbose=False):
         else:
             path.append(current)
 
-
-    
     """
     Now, try to shorten the path if possible
     Sometimes we take unnecessary steps:
@@ -211,6 +210,10 @@ def WordWalk(start, dest, clean=True, verbose=False):
     if not GoodPath(path, start, dest):
         print "Error: Found path, but it is invalid"
         raise Exception("Invalid Path")
+
+
+    if reverse:
+        path = path.reverse()
 
 
     if not clean:
@@ -242,6 +245,13 @@ def WordWalk(start, dest, clean=True, verbose=False):
         raise Exception("Invalid Path")
 
     return path
+
+
+def threaded_walker(**kwargs):
+    """ A version of a walker that can be threaded
+    """
+    
+    
 
 
 def main():
