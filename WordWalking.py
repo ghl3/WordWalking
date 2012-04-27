@@ -86,11 +86,14 @@ def GoodPath( path, start, end ):
     return True
 
 
-def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords=None, EscapeFlag=None):
+def WordWalk(start, dest, clean=True, verbose=False, reverse=False, 
+             DeadEndWords=None, GlobalFlags=None):
     """
     Talk two words of the same length and find a path between them using real
     dictionary words
     """
+
+    print "Starting Word Walk"
 
     if len(start) != len(dest):
         print "Words have unequal length"
@@ -149,9 +152,10 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
 
     while current != dest:
 
+        print current
+
         # Excape if the EscapeFlag is true
-        if EscapeFlag:
-            print "Terminating Thread"
+        if GlobalFlags["StopFlag"]:
             raise Exception("Terminated")
 
         if verbose: print "\n",  path
@@ -258,40 +262,53 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
     '''
 
 class threaded_walker(threading.Thread):
-    def __init__(self, filename, queue):
+    """ A threaded class that implements a walker
+
+    """
+
+    def __init__(self, name="Thread"):
         threading.Thread.__init__(self)
+        self.name = name
         self.StopFlag=False
+        self.finished = threading.Event()
+
 
     def stop(self):
-        self.stop.set()
+        self.finished.set()
+        self._Thread__stop()
 
     def stopped(self):
-        return self.stop.isSet()
+        return self.finished.isSet()
 
-    def run(self):
+    def run(self, GlobalPath=None, **kwargs):
+
+        # Get the GlobalFlags from the kwargs
+        GlobalFlags = kwargs["GlobalFlags"]
 
         # Start the process using the global DeadEndWords
         try:
-            path = WordWalk( DeadEndWords=DeadEndWords, **kwargs )
-        except Exception("Terminated"):
+            path = WordWalk( **kwargs )
+        except Exception:
+            print "Terminating Thread:", self.name
+            self.stop()
             return
-    
-    # In case the stop flag wasn't seen by the process,
-    # check it here
-    if StopFlag:
+        
+        # In case the stop flag wasn't seen by the process,
+        # check it here
+        if GlobalFlags["StopFlag"]:
+            return
+
+        # Else, set it to
+        # kill the other threads
+        GlobalFlags["StopFlag"] = True
+
+        # After all the threads are dead, set the global path
+        # This prevents other threads from messing it up
+        GlobalPath.extend(path)
+        
+        self.stop()
+
         return
-
-    # Else, set it
-    StopFlag = True
-
-    # After all the threads are dead, set the global path
-    # This prevents other threads from messing it up
-    print "Setting Global Path to: ", path
-    GlobalPath = path
-
-    print "Global Path: ", GlobalPath
-
-    return
 
 
 def main():
@@ -344,28 +361,45 @@ def main():
     
     # Create the global variables
     DeadEndWords = set()
-    StopFlag = False
     path = []
-    GlobalVars = [path, StopFlag, DeadEndWords] # Make mutable object, meh
+
+    # This is a global dict
+    # If StopFlag==True, all threads 
+    # should terminate
+    GlobalFlags = {"StopFlag" : False}
 
     # Create the threads
-    threading_args = (path, StopFlag, DeadEndWords)
-    common_options = {"verbose" : options.verbose, "clean" : options.clean,  "clean" : options.clean}
+    # threading_args = (path, StopFlag, DeadEndWords)
+    common_options = {"verbose" : options.verbose, "clean" : options.clean,  
+                      "DeadEndWords" : DeadEndWords, "GlobalFlags" : GlobalFlags,
+                      "GlobalPath" : path}
                    
     forward_args = {"start" : start_word, "dest" : dest, "reverse" : False}
     forward_args.update(common_options)
-    forward_walker = threading.Thread(target=threaded_walker, args=threading_args, kwargs=forward_args)
+    #forward_walker = threading.Thread(target=threaded_walker, kwargs=forward_args)
+    forward_walker = threaded_walker("forward_walker")
 
     backward_args = {"start" : dest, "dest" : start_word, "reverse" : True}
     backward_args.update(common_options)
-    backward_walker = threading.Thread(target=threaded_walker, args=threading_args, kwargs=backward_args)
-    
-    # Start the threads and join
-    forward_walker.start()
-    backward_walker.start()
+    #backward_walker = threading.Thread(target=threaded_walker, kwargs=backward_args)
+    backward_walker = threaded_walker("backward_walker")
 
-    forward_walker.join()
-    backward_walker.join()
+    # Run the walkers
+    forward_walker.run(**forward_args)
+    backward_walker.run(**backward_args)
+
+    #threading.active_count():
+    while forward_walker.isAlive() or backward_walker.isAlive():
+        pass
+
+    print "All Threads Ended"
+
+    # Start the threads and join
+    #forward_walker.start()
+    #backward_walker.start()
+
+    #forward_walker.join()
+    #backward_walker.join()
 
     '''
     while StopFlag==False:
@@ -378,7 +412,7 @@ def main():
         backward_walker._stop()
    '''
 
-    print path
+    print "Final Answer: ", path
     return
 
 
