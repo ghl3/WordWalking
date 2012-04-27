@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import itertools
 
 
 class TreeNode:
@@ -7,7 +8,9 @@ class TreeNode:
         self._value = value
         self._last = last
         self._next = [ ]
+        self._regn = [ ] # registry holding all nodes
         self._regv = set() # registry holding unique values of all nodes
+        self.head()._regn.append(self)
         self.head()._regv.add(value)
     def add_node(self, value):
         new_node = TreeNode(value, self)
@@ -27,6 +30,13 @@ class TreeNode:
         return self.nlineage()[-1]
     def values(self):
         return [x._value for x in self._next]
+    def all_values(self):
+        return self.head()._regv
+    def all_nodes(self):
+        return self.head()._regn
+    def size(self):
+        return len(self.all_nodes())
+
 
 def test_tree():
     head = TreeNode("head")
@@ -36,7 +46,8 @@ def test_tree():
     print child1.vlineage()
     print gchild.vlineage()
     print gchild.head()
-    print head._regv
+    print head.all_values()
+    print [n._value for n in head.all_nodes()]
 
 
 def metric(word1, word2):
@@ -69,6 +80,33 @@ def test_get_neighbors():
     print get_neighbors("barf", allwords, exclude=["barn", "zarf"])
 
 
+def choose_next_target(sL, sR, space, exclude=[]):
+    """
+    Given two lists of nodes, finds the pair (tL, tR) such that tL in sL and tR
+    in sR with the smallest metric distance. Expand the list of neighbors for
+    those two nodes.
+    """
+    print "choosing next target pair...",
+    print "L/R sniffer sizes are (%d, %d)" % (sL.size(), sR.size()),
+
+    dist, tL, tR = sorted([(metric(s._value, t._value), s, t)
+                           for s, t in itertools.product(sL.all_nodes(),
+                                                         sR.all_nodes())
+                           if (s._value, t._value) not in exclude])[0]
+
+    print "best pair is (%s, %s) with distance %d" % (tL._value, tR._value, dist)
+
+    candL = get_neighbors(tL._value, space, exclude=tL.all_values())
+    candR = get_neighbors(tR._value, space, exclude=tR.all_values())
+
+    if not tL._next:
+        for s in candL: tL.add_node(s)
+    if not tR._next:
+        for s in candR: tR.add_node(s)
+
+    return dist, (tL, tR)
+
+
 def walk_from(start, dest):
 
     if len(start) != len(dest):
@@ -84,18 +122,23 @@ def walk_from(start, dest):
         print dest, "is not in the dictionary"
         return
 
-    walkerL = TreeNode(start)
-    walkerR = TreeNode(dest)
+    snifferL = TreeNode(start)
+    snifferR = TreeNode(dest)
 
-    for word in get_neighbors(walkerL._value, space):
-        walkerL.add_node(word)
+    for s in get_neighbors(snifferL._value, space): snifferL.add_node(s)
+    for s in get_neighbors(snifferR._value, space): snifferR.add_node(s)
 
-    for word in get_neighbors(walkerR._value, space):
-        walkerR.add_node(word)
+    already_tried = set()
 
-    candL = sorted(walkerL.values(), key=lambda x: metric(x, walkerR._value))
+    for i in range(50):
+        dist, best = choose_next_target(snifferL, snifferR, space, exclude=already_tried)
+        already_tried.add((best[0]._value, best[1]._value))
+        if dist == 0:
+            print "got it!"
+            p = list(reversed(best[0].vlineage())) + best[1].vlineage()[1:]
+            print ("path %d: (" % len(p)) + " -> ".join(p) + ")"
+            return
 
-    print candL, [metric(c, walkerR._value) for c in candL]
 
 
 if __name__ == "__main__":
@@ -103,5 +146,6 @@ if __name__ == "__main__":
         test_tree()
         test_metric()
         test_get_neighbors()
-    walk_from("book", "nook")
+    else:
+        walk_from("whale", "silly")
 
