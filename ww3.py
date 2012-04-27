@@ -137,12 +137,17 @@ def walk_from(start, dest):
     already_tried = set()
 
     while True:
-        dist, best = choose_next_target(snifferL, snifferR, space, exclude=already_tried)
-        already_tried.add((best[0]._value, best[1]._value))
+        try:
+            dist, best = choose_next_target(snifferL, snifferR, space,
+                                            exclude=already_tried)
+            already_tried.add((best[0]._value, best[1]._value))
+        except:
+            print "could not find a path, sorry ;("
+            break
         if dist == 0:
             print "got it!"
             p = list(reversed(best[0].vlineage())) + best[1].vlineage()[1:]
-            print ("path %d: (" % len(p)) + " -> ".join(p) + ")"
+            print ("path length %d: (" % len(p)) + " -> ".join(p) + ")"
             break
 
 
