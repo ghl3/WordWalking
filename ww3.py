@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import itertools
+import optparse
 
 
 class TreeNode:
@@ -108,7 +109,12 @@ def choose_next_target(sL, sR, space, exclude=[]):
 
 
 def walk_from(start, dest):
-
+    """
+    Uses a slightly intelligent strategy to get from `start` to `dest`. It does
+    a depth-first search from both ends. A list of all 'sniffed' words from both
+    sides is maintained. Each iteration, the closest pair of words is
+    identified, and that word expanded with all its neighbors on each side.
+    """
     if len(start) != len(dest):
         print "words must be of equal length", start, dest
         return None
@@ -130,22 +136,41 @@ def walk_from(start, dest):
 
     already_tried = set()
 
-    for i in range(50):
+    while True:
         dist, best = choose_next_target(snifferL, snifferR, space, exclude=already_tried)
         already_tried.add((best[0]._value, best[1]._value))
         if dist == 0:
             print "got it!"
             p = list(reversed(best[0].vlineage())) + best[1].vlineage()[1:]
             print ("path %d: (" % len(p)) + " -> ".join(p) + ")"
-            return
+            break
 
+
+def main():
+    """
+    Take two words of the same length and return a path between them using only
+    1-letter pertubations. Every word in the path must be a valid word in the
+    dictionary.
+    """
+    vers = "0.2-zrakey"
+
+    desc = " ".join(main.__doc__.split())
+    parser = optparse.OptionParser(description=desc, version=vers,
+                                   usage="%prog golf bird [options]")
+    opts, args = parser.parse_args()
+    try:
+        start, dest = args[0:2]
+    except:
+        print "usage: ww3.py golf bird"
+    walk_from(start, dest)
+
+
+def run_tests():
+    test_tree()
+    test_metric()
+    test_get_neighbors()
 
 
 if __name__ == "__main__":
-    if False:
-        test_tree()
-        test_metric()
-        test_get_neighbors()
-    else:
-        walk_from("whale", "silly")
+    main()
 
