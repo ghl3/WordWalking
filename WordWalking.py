@@ -2,7 +2,7 @@
 
 import sys
 import optparse
-
+import threading
 
 def collect_words_of_length(size, loc='/usr/share/dict/words'):
     """
@@ -219,6 +219,10 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
     if not clean:
         return path
 
+    if path == None:
+        raise Exception("path==None")
+    
+
     path = CleanPathList(path)
 
     '''
@@ -247,11 +251,24 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False, DeadEndWords
     return path
 
 
-def threaded_walker(**kwargs):
+def threaded_walker(GlobalPath, StopFlag, DeadEndWords, **kwargs):
     """ A version of a walker that can be threaded
     """
-    
-    
+
+    # Start the process using the global DeadEndWords
+    path = WordWalk( DeadEndWords=DeadEndWords, **kwargs )
+
+    StopFlag = True
+
+    # Wait for all other walkers to die
+    while len(threading.enumerate()) > 0:
+        pass
+
+    # After all the threads are dead, set the global path
+    # This prevents other threads from messing it up
+    GlobalPath = path
+
+    return
 
 
 def main():
@@ -274,6 +291,10 @@ def main():
                        action="store_true", default=True,
                        help="Clean the final path to reduce unnecessary steps." )
 
+    parser.add_option( "-t", "--threads", dest="use_threads",
+                       action="store_true", default=False,
+                       help="Launch multiple parallel threads." )
+
     # Parse the command line options:
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -291,10 +312,49 @@ def main():
     To Do: Add threading which walks from both ends and quits if they
            meet in the middle (ie if their paths intersect)
     """
-    
 
-    print WordWalk(start=start_word, dest=dest,
-                    verbose=options.verbose, clean=options.clean) 
+    if not options.use_threads:
+        print WordWalk(start=start_word, dest=dest,
+                       verbose=options.verbose, clean=options.clean) 
+        return
+
+    
+    # Create the global variables
+    DeadEndWords = set()
+    StopFlag = False
+    path = []
+
+    # Create the threads
+    threading_args = (path, StopFlag, DeadEndWords)
+    common_options = {"verbose" : options.verbose, "clean" : options.clean,  "clean" : options.clean}
+                   
+    forward_args = {"start" : start_word, "dest" : dest, "reverse" : False}
+    forward_args.update(common_options)
+    forward_walker = threading.Thread(target=threaded_walker, args=threading_args, kwargs=forward_args)
+
+    backward_args = {"start" : dest, "dest" : start_word, "reverse" : True}
+    backward_args.update(common_options)
+    backward_walker = threading.Thread(target=threaded_walker, args=threading_args, kwargs=backward_args)
+    
+    # Start the threads and join
+    forward_walker.start()
+    backward_walker.start()
+
+    while StopFlag==False:
+        pass
+
+    if forward_walker.isAlive():
+        forward_walker._stop()
+
+    if backward_walker.isAlive():
+        backward_walker._stop()
+
+    #forward_walker.join()
+    #backward_walker.join()
+
+
+    print path
+    return
 
 
 if __name__ == "__main__":
