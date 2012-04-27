@@ -152,10 +152,8 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False,
 
     while current != dest:
 
-        print current
-
         # Excape if the EscapeFlag is true
-        if GlobalFlags["StopFlag"]:
+        if GlobalFlags != None and GlobalFlags["StopFlag"]:
             raise Exception("Terminated")
 
         if verbose: print "\n",  path
@@ -346,10 +344,6 @@ def main():
     # Create the global variables
     DeadEndWords = set()
     path = []
-
-    # This is a global dict
-    # If StopFlag==True, all threads 
-    # should terminate
     GlobalFlags = {"StopFlag" : False}
 
     # Create the threads
@@ -361,25 +355,12 @@ def main():
     forward_args = {"name" : "forward_walker", "start" : start_word, "dest" : dest, "reverse" : False}
     forward_args.update(common_options)
     forward_walker = threading.Thread(target=threaded_walker, kwargs=forward_args)
-    #forward_walker = threaded_walker("forward_walker")
 
     backward_args = {"name" : "backward_walker", "start" : dest, "dest" : start_word, "reverse" : True}
     backward_args.update(common_options)
     backward_walker = threading.Thread(target=threaded_walker, kwargs=backward_args)
-    #backward_walker = threaded_walker("backward_walker")
 
-    '''
-    # Run the walkers
-    forward_walker.run(**forward_args)
-    backward_walker.run(**backward_args)
-
-    #threading.active_count():
-    while forward_walker.isAlive() or backward_walker.isAlive():
-        pass
-
-
-    '''
-    #Start the threads and join
+    # Start the threads and join
     forward_walker.start()
     backward_walker.start()
 
@@ -389,17 +370,6 @@ def main():
     print "All Threads Ended"
     print "Final Answer: ", path
     return
-
-    '''
-    while StopFlag==False:
-        pass
-
-    if forward_walker.isAlive():
-        forward_walker._stop()
-
-    if backward_walker.isAlive():
-        backward_walker._stop()
-   '''
 
 
 
