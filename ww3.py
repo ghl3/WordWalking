@@ -59,7 +59,7 @@ def get_neighbors(word, candidates, exclude=[], pred=list):
                  w not in exclude])
 
 
-def expand_best_pair(sL, sR, space, exclude=[]):
+def expand_best_pair(sL, sR, space, cache=None, exclude=[]):
     """
     Given two lists of nodes, finds the pair (tL, tR) such that tL in sL and tR
     in sR with the smallest metric distance. Expand the list of neighbors for
@@ -68,22 +68,20 @@ def expand_best_pair(sL, sR, space, exclude=[]):
     print "choosing next target pair...",
     print "L/R sniffer sizes are (%d, %d)" % (sL.size(), sR.size()),
 
-    dist, tL, tR = min([(metric(s._value, t._value), s, t)
-                        for s, t in itertools.product(sL.all_nodes(),
-                                                      sR.all_nodes())
-                        if (s._value, t._value) not in exclude])
+    dist, tL, tR = min(cache - exclude)
 
     print "best pair is (%s, %s) with distance %d" % (tL._value, tR._value, dist)
 
     candL = get_neighbors(tL._value, space, exclude=tL.all_values())
     candR = get_neighbors(tR._value, space, exclude=tR.all_values())
 
-    if not tL._next:
-        for s in candL: tL.add_node(s)
-    if not tR._next:
-        for s in candR: tR.add_node(s)
+    if not tL._next: [tL.add_node(s) for s in candL]
+    if not tR._next: [tR.add_node(s) for s in candR]
 
-    return dist, (tL, tR)
+    cache |= set([(metric(s._value, t._value), s, t)
+                  for s, t in itertools.product(tL._next, tR._next)])
+
+    return dist, tL, tR
 
 
 def walk_from(start, dest):
@@ -109,18 +107,20 @@ def walk_from(start, dest):
     snifferL = TreeNode(start)
     snifferR = TreeNode(dest)
     already_tried = set()
+    cached_pairs = set([(metric(start, dest), snifferL, snifferR)])
 
     while True:
         try:
-            dist, best = expand_best_pair(snifferL, snifferR, space,
-                                          exclude=already_tried)
-            already_tried.add((best[0]._value, best[1]._value))
+            dist, bestL, bestR = expand_best_pair(snifferL, snifferR, space,
+                                                  cache=cached_pairs,
+                                                  exclude=already_tried)
+            already_tried.add((dist, bestL, bestR))
         except:
             print "could not find a path, sorry ;("
             break
         if dist == 0:
             print "got it!"
-            p = list(reversed(best[0].vlineage())) + best[1].vlineage()[1:]
+            p = list(reversed(bestL.vlineage())) + bestR.vlineage()[1:]
             print ("path length %d: (" % len(p)) + " -> ".join(p) + ")"
             break
 
