@@ -8,3 +8,4 @@ Given two words of the same length, find a path between them using one-letter at
 
 - crime -> ocean / ocean -> crime
 - force -> crumb / crumb -> force
+- phone -> waste / waste -> phone
