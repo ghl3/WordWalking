@@ -31,6 +31,7 @@ def Overlap(wordA, wordB):
     return overlap
 
 
+
 def OneAway(wordA, wordB):
     """
     Return whether two words differ by one letter
@@ -96,13 +97,13 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False,
     if len(start) != len(dest):
         print "Words have unequal length"
         raise Exception("WordWalk: unequal length words, idiot!")
-    Dictionary = collect_words_of_length(len(start))
+    word_list = collect_words_of_length(len(start))
 
-    if start not in Dictionary:
+    if start not in word_list:
         print "Error: %s not in dictionary" % start
         return
 
-    if dest not in Dictionary:
+    if dest not in word_list:
         print "Error: %s not in dictionary" % dest
         return
 
@@ -137,6 +138,16 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False,
         return True
 
 
+    def node_metric( wordA, wordB ):
+        """ Return the value difference between words 
+
+        For now, simply uses the distance
+        Can be made smarter in the future, so we
+        keep it generic
+        """
+        return Overlap( wordA, wordB )
+
+
     """
     Algorithm:  
     - Start with beginning
@@ -157,38 +168,39 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False,
         if verbose: print "\n",  path
 
         # Calculate the current distance to the target
-        distance = Overlap(current, dest)
-        MatchFound = False
+        current_distance = node_metric(current, dest)
 
-        """ look for strictly > nodes"""
-        for word in Dictionary:
-            if check_acceptable_node(word) and Overlap(word, dest) > distance:
-                current = word
-                MatchFound = True
+        """
+        New Algorithm:
+        Loop through all elements
+        Calculate their distances
+        If the distance is a jump > 1, 
+        return right away.
+        Else, take the maximum distance
+        """
+        
+        match_found=False
+        next_node_word_value = (None, None)
+
+        for word in word_list:
+            if not check_acceptable_node(word): continue
+            match_found=True
+            node_distance = node_metric(word, dest)
+
+            """ Break right away if a large jump"""
+            if node_distance - current_distance > 0:
+                next_node_word_value = (word, node_distance)
                 break
+            
+            """ Else, only change if we get an increase """
+            next_node_word_value = max( (word, node_distance), next_node_word_value, 
+                                       key=(lambda x: x[1]) )
+            
 
-        """ look for >= nodes """
-        if not MatchFound:
-            for word in Dictionary:
-                if check_acceptable_node(word) and Overlap(word, dest) >= distance:
-                    current = word
-                    MatchFound = True
-                    break
-
-        """ allow for any nodes """
-        if not MatchFound:
-            for word in Dictionary:
-                if check_acceptable_node(word):
-                    current = word
-                    MatchFound = True
-                    break
-
-        # If we can't find a word that fulfills the above, we must take action.
-        # We call the current word a "dead end" and we back out.
-        if not MatchFound:
+        if next_node_word_value == (None, None):
             print "Ran into dead end with: %s" % current
 
-            # If the start is a dead end, we failed
+            """ If the start is a dead end, we failed """
             if current == start:
                 print "Error: Didn't find a path from %s to %s" % (start, dest)
                 return
@@ -199,9 +211,11 @@ def WordWalk(start, dest, clean=True, verbose=False, reverse=False,
             current = path[-2]
             path = path[:-1]
 
-        # If we DID find a word, append it to the path and keep looking
+
         else:
-            path.append(current)
+            next_node = next_node_word_value[0]
+            current = next_node
+            path.append( next_node )
 
     """
     Now, try to shorten the path if possible
